@@ -14,7 +14,7 @@
     crossorigin="anonymous"></script>
   <script>
     $(document).ready(function (e) {
-      var conn = new WebSocket('ws://localhost:8084'); //conectara con el websocket
+      var conn = new WebSocket('ws://mascostasweb.herokuapp.com/'); //conectara con el websocket
 
       conn.onopen = function (e) { //si la conexion es existossa
         console.log("Conexion exitosa");
