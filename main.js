@@ -137,3 +137,114 @@ facebookButton.addEventListener('click', e => {
   })
 
 })
+
+const db = firebase.firestore();
+
+const productoForm = document.getElementById("producto-form");
+const productosContainer = document.getElementById("productos-container");
+
+let editStatus = false;
+let id = '';
+
+/**
+ * Save a New producto in Firestore
+ * @param {string} titulo the titulo of the producto
+ * @param {string} precio the precio of the producto
+ */
+const saveproducto = (titulo, precio) =>
+  db.collection("productos").doc().set({
+    titulo,
+    precio,
+  });
+
+const getproductos = () => db.collection("productos").get();
+
+const onGetproductos = (callback) => db.collection("productos").onSnapshot(callback);
+
+const deleteproducto = (id) => db.collection("productos").doc(id).delete();
+
+const getproducto = (id) => db.collection("productos").doc(id).get();
+
+const updateproducto = (id, updatedproducto) => db.collection('productos').doc(id).update(updatedproducto);
+
+window.addEventListener("DOMContentLoaded", async (e) => {
+  onGetproductos((querySnapshot) => {
+    productosContainer.innerHTML = "";
+
+    querySnapshot.forEach((doc) => {
+      const producto = doc.data();
+
+      productosContainer.innerHTML += `<div class="card card-body mt-2 border-primary">
+    <h3 class="h5">${producto.titulo}</h3>
+    <p>${producto.precio}</p>
+    <div>
+      <button class="btn btn-danger btn-delete"  data-id="${doc.id}">
+        🗑 Eliminar
+      </button>
+      <button class="btn btn-secondary btn-edit" style="background-color: #ff9d13;"  data-id="${doc.id}">
+        🖉 Editar
+      </button>
+    </div>
+  </div>`;
+    });
+
+    const btnsDelete = productosContainer.querySelectorAll(".btn-delete");
+    btnsDelete.forEach((btn) =>
+      btn.addEventListener("click", async (e) => {
+        console.log(e.target.dataset.id);
+        try {
+          await deleteproducto(e.target.dataset.id);
+        } catch (error) {
+          console.log(error);
+        }
+      })
+    );
+
+    const btnsEdit = productosContainer.querySelectorAll(".btn-edit");
+    btnsEdit.forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        try {
+          const doc = await getproducto(e.target.dataset.id);
+          const producto = doc.data();
+          productoForm["producto-titulo"].value = producto.titulo;
+          productoForm["producto-precio"].value = producto.precio;
+
+          editStatus = true;
+          id = doc.id;
+          productoForm["h4-producto-form"].innerText = "Editar";
+          productoForm["btn-producto-form"].innerText = "Editar";
+
+        } catch (error) {
+          console.log(error);
+        }
+      });
+    });
+  });
+});
+
+productoForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const titulo = productoForm["producto-titulo"];
+  const precio = productoForm["producto-precio"];
+
+  try {
+    if (!editStatus) {
+      await saveproducto(titulo.value, precio.value);
+    } else {
+      await updateproducto(id, {
+        titulo: titulo.value,
+        precio: precio.value,
+      })
+
+      editStatus = false;
+      id = '';
+      productoForm['btn-producto-form'].innerText = 'Save';
+    }
+
+    productoForm.reset();
+    titulo.focus();
+  } catch (error) {
+    console.log(error);
+  }
+});
